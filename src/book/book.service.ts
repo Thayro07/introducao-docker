@@ -2,7 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from "@nestjs/common
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateBookDto } from "./dto/create-book.dto";
 import { UpdateBookDto } from "./dto/update-book.dto";
-import { book } from "@prisma/client";
+import { $Enums, book } from "@prisma/client";
 import { categoriaLivro } from '@prisma/client';
 
 @Injectable()
@@ -50,22 +50,17 @@ export class BookService {
         return founderBook
     }
 
-    async update(id: string, data: UpdateBookDto): Promise<book | null> {
-        try {
-            return await this.prisma.book.update({
-                where: { id },
-                data: {
-                    ...data,
-                    categoria: data.categoria ? { set: data.categoria as categoriaLivro } : undefined,
-                },
-            });
-        } catch {
-            throw new NotFoundException(`
+    async update(id: string, data: UpdateBookDto) {
+        const book = await this.prisma.book.findUnique({ where: { id } });
 
-                Livro com id ${id} não identificado
-                
-                `)
+        if (!book) {
+            throw new NotFoundException(`Livro com id ${id} não identificado`);    
         }
+
+        return this.prisma.book.update({
+            where: { id },
+            data: { ...data, categoria: data.categoria?.toUpperCase() as categoriaLivro },
+        });
     }
 
     async delete(id: string): Promise<book | null> {
